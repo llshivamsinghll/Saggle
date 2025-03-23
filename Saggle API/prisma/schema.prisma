@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  passwordHash  String
+  role          String    // "participant" or "host"
+  createdAt     DateTime  @default(now())
+  competitions  Competition[] // Hosted competitions
+  submissions   Submission[] // Participant submissions
+  posts         Post[]       // Forum posts
+}
+
+model Competition {
+  id            Int       @id @default(autoincrement())
+  title         String
+  hostId        Int
+  host          User      @relation(fields: [hostId], references: [id])
+  startTime     DateTime
+  endTime       DateTime
+  maxAge        Int
+  rules         String
+  algorithm     String    // e.g., "RMSE", "Accuracy", "AUC-ROC", "F1", "Precision", "Recall"
+  trainData     String    // S3 file path
+  testData      String    // S3 file path
+  demoFile      String    // S3 file path
+  idealData     String    // S3 file path (not accessible to participants)
+  submissions   Submission[]
+  posts         Post[]
+  createdAt     DateTime  @default(now())
+}
+
+model Submission {
+  id            Int       @id @default(autoincrement())
+  competitionId Int
+  competition   Competition @relation(fields: [competitionId], references: [id])
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id])
+  filePath      String    // S3 file path
+  score         Float?
+  submittedAt   DateTime  @default(now())
+}
+
+model Post {
+  id            Int       @id @default(autoincrement())
+  competitionId Int
+  competition   Competition @relation(fields: [competitionId], references: [id])
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id])
+  content       String
+  isPinned      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+}
