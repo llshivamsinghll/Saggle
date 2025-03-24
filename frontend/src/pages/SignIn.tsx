@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useAuth } from "@/contexts/AuthContext";
+import { login } from "@/services/api";
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -71,7 +71,17 @@ const SignIn = () => {
       setIsSubmitting(true);
       
       try {
-        // Use the actual sign in function from context
+        // Call the login API
+        const response = await login(formData.email, formData.password);
+        
+        // Store the token if remember me is checked
+        if (formData.rememberMe) {
+          localStorage.setItem('token', response.data.token);
+        } else {
+          sessionStorage.setItem('token', response.data.token);
+        }
+        
+        // Update auth context
         await signIn(formData.email, formData.password);
         
         // Success
@@ -81,8 +91,10 @@ const SignIn = () => {
         
         // Redirect to dashboard
         navigate("/");
-      } catch (error) {
-        toast.error("Failed to sign in.", {
+      } catch (error: any) {
+        // Handle specific error messages from the API
+        const errorMessage = error.response?.data?.message || "Failed to sign in.";
+        toast.error(errorMessage, {
           description: "Please check your credentials and try again.",
         });
       } finally {
